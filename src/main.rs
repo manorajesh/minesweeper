@@ -7,9 +7,9 @@ mod minesweeper;
 
 const SQUARE_WIDTH: f32 = 30.0;
 const FACE_WIDTH: f32 = 60.0;
-const NUM_ROWS: usize = 100;
-const NUM_COLS: usize = 100;
-const NUM_MINES: usize = 500;
+const NUM_ROWS: usize = 10;
+const NUM_COLS: usize = 10;
+const NUM_MINES: usize = 10;
 
 fn window_conf() -> Conf {
     Conf {
@@ -54,6 +54,28 @@ async fn main() {
     loop {
         clear_background(Color::from_hex(0xc0c0c0));
 
+        if is_mouse_button_down(MouseButton::Left) {
+            match mouse_position_to_cell(mouse_position()) {
+                Some(ClickType::Face) => {
+                    face_state = Face::Pressed;
+                }
+
+                _ => {}
+            }
+        }
+
+        if is_mouse_button_released(MouseButton::Left) {
+            match mouse_position_to_cell(mouse_position()) {
+                Some(ClickType::Face) => {
+                    println!("Resetting game");
+                    field = MineSweeper::new(NUM_COLS, NUM_ROWS, NUM_MINES);
+                    face_state = Face::Smile;
+                }
+
+                _ => {}
+            }
+        }
+
         if is_mouse_button_pressed(MouseButton::Left) {
             match mouse_position_to_cell(mouse_position()) {
                 Some(ClickType::Cell(x, y)) => {
@@ -63,13 +85,8 @@ async fn main() {
                         face_state = Face::Lost;
                     }
                 }
-                Some(ClickType::Face) => {
-                    println!("Resetting game");
-                    field = MineSweeper::new(NUM_COLS, NUM_ROWS, NUM_MINES);
-                    face_state = Face::Smile;
-                }
 
-                None => {}
+                _ => {}
             }
         }
 
