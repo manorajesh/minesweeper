@@ -1,3 +1,7 @@
+use rand::Rng;
+
+const MAX_SEARCH_DEPTH: usize = 5;
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum CellType {
     Mine,
@@ -26,6 +30,7 @@ impl Cell {
 #[derive(Debug, Clone)]
 pub struct MineSweeper {
     pub field: Vec<Vec<Cell>>,
+    correct_flags: usize,
 }
 
 impl MineSweeper {
@@ -59,8 +64,8 @@ impl MineSweeper {
 
         // Populate mines
         for _ in 0..mines {
-            let x = (macroquad::rand::rand() as usize) % width;
-            let y = (macroquad::rand::rand() as usize) % height;
+            let x = rand::thread_rng().gen_range(0..width);
+            let y = rand::thread_rng().gen_range(0..height);
             field[x][y].cell_type = CellType::Mine;
         }
 
@@ -81,13 +86,17 @@ impl MineSweeper {
             }
         }
 
-        Self { field }
+        Self { field, correct_flags: 0 }
     }
 
     // Returns true if the cell is a mine
-    pub fn reveal(&mut self, x: usize, y: usize) -> bool {
+    pub fn reveal(&mut self, x: usize, y: usize, depth: usize) -> bool {
         if let Some(row) = self.field.get_mut(y) {
             if let Some(cell) = row.get_mut(x) {
+                if cell.flag {
+                    return false;
+                }
+
                 if cell.visible {
                     return false;
                 }
@@ -100,6 +109,10 @@ impl MineSweeper {
 
                 cell.visible = true;
 
+                if depth > MAX_SEARCH_DEPTH {
+                    return false;
+                }
+
                 if let CellType::Empty = cell.cell_type {
                     for i in -1..=1 {
                         let y_shift = (y as i32) + i;
@@ -111,7 +124,7 @@ impl MineSweeper {
                             if x_shift < 0 {
                                 continue;
                             }
-                            self.reveal(x_shift as usize, y_shift as usize);
+                            self.reveal(x_shift as usize, y_shift as usize, depth + 1);
                         }
                     }
                 }
@@ -131,6 +144,16 @@ impl MineSweeper {
                 }
 
                 cell.flag = !cell.flag;
+
+                if cell.flag {
+                    if let CellType::Mine = cell.cell_type {
+                        self.correct_flags += 1;
+                    }
+                } else {
+                    if let CellType::Mine = cell.cell_type {
+                        self.correct_flags -= 1;
+                    }
+                }
             }
         }
     }
@@ -145,5 +168,13 @@ impl MineSweeper {
                 }
             }
         }
+    }
+
+    pub fn is_win(&self, total_mines: usize) -> bool {
+        if self.correct_flags == total_mines {
+            return true;
+        }
+
+        false
     }
 }

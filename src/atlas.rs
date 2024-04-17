@@ -2,24 +2,21 @@ use macroquad::prelude::*;
 
 use crate::{ Cell, CellType };
 
-const ATLAS_CELL_SIZE: f32 = 16.0;
-const ATLAS_WIDTH: f32 = 64.0;
-const ATLAS_ROW_COUNT: f32 = 4.0;
-pub fn index_alias(index: f32) -> Rect {
-    if index > ATLAS_ROW_COUNT * ATLAS_ROW_COUNT {
-        return Rect::new(ATLAS_WIDTH, ATLAS_WIDTH, ATLAS_CELL_SIZE, ATLAS_CELL_SIZE);
+fn index_alias(index: f32, atlas_cell_size: f32, atlas_width: f32, atlas_row_count: f32) -> Rect {
+    if index > atlas_row_count * atlas_row_count {
+        return Rect::new(atlas_width, atlas_width, atlas_cell_size, atlas_cell_size);
     }
     Rect::new(
-        (index * ATLAS_CELL_SIZE) % ATLAS_WIDTH,
-        (index / ATLAS_ROW_COUNT).floor() * ATLAS_CELL_SIZE,
-        ATLAS_CELL_SIZE,
-        ATLAS_CELL_SIZE
+        (index * atlas_cell_size) % atlas_width,
+        (index / atlas_row_count).floor() * atlas_cell_size,
+        atlas_cell_size,
+        atlas_cell_size
     )
 }
 
 pub fn cell_to_image(cell: &Cell) -> Rect {
-    if !cell.visible {
-        return index_alias(9.0);
+    if !cell.visible && !cell.flag {
+        return index_alias(9.0, 16.0, 64.0, 4.0);
     }
 
     let mut index;
@@ -36,13 +33,32 @@ pub fn cell_to_image(cell: &Cell) -> Rect {
         }
     }
 
-    if cell.incorrect {
-        index += 1.0;
-    }
-
     if cell.flag {
         index = 10.0;
     }
 
-    index_alias(index)
+    if cell.incorrect {
+        index += 1.0;
+    }
+
+    index_alias(index, 16.0, 64.0, 4.0)
+}
+
+#[derive(Debug)]
+pub enum Face {
+    Smile,
+    Pressed,
+    Lost,
+    Won,
+}
+
+pub fn face_to_image(face: &Face) -> Rect {
+    let index = match face {
+        Face::Smile => 0.0,
+        Face::Pressed => 1.0,
+        Face::Lost => 4.0,
+        Face::Won => 3.0,
+    };
+
+    index_alias(index, 50.0, 250.0, 5.0)
 }
